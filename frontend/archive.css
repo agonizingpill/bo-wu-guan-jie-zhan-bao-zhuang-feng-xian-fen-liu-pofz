@@ -62,8 +62,8 @@ nav a[aria-current] { color: var(--rust); border-color: var(--rust); }
 .index-entry .mono { color: var(--rust); font-size: 12px; }
 .index-entry strong { display: block; margin: 6px 0 3px; letter-spacing: .02em; }
 .stamp { display: inline-block; border: 1px solid currentColor; border-radius: 2px; color: var(--muted); padding: 1px 6px 2px; font-family: var(--sans); font-size: 11px; font-weight: 700; white-space: nowrap; }
-.stamp:is([data-state='sampling'],[data-state='hold'],[data-state='held'],[data-state='review_required'],[data-state='high'],[data-state='conflict']) { color: var(--rust); }
-.stamp:is([data-state='ready'],[data-state='cleared'],[data-state='booked'],[data-state='low'],[data-state='dispatched']) { color: var(--pine); }
+.stamp:is([data-state='sampling'],[data-state='hold'],[data-state='held'],[data-state='review_required'],[data-state='high'],[data-state='conflict'],[data-state='unverifiable'],[data-state='failed']) { color: var(--rust); }
+.stamp:is([data-state='ready'],[data-state='cleared'],[data-state='booked'],[data-state='low'],[data-state='dispatched'],[data-state='done']) { color: var(--pine); }
 .dossier { background: var(--paper); border: 1px solid var(--rule); padding: clamp(18px, 3vw, 34px); min-height: 450px; }
 .record-header { border-bottom: 1px solid var(--rule); padding-bottom: 19px; margin-bottom: 20px; }
 .accession { color: var(--rust); font-weight: 650; font-size: 13px; }
@@ -131,6 +131,8 @@ textarea { min-height: 80px; resize: vertical; }
 .evidence summary { cursor: pointer; }
 .fingerprint { overflow-wrap: anywhere; }
 .triage-intake p { margin: 8px 0 14px; }
+.recheck-panel { border-top: 1px solid var(--rule); margin-top: 22px; padding-top: 13px; }
+.recheck-panel .facts dd small { font-weight: 400; }
 .review-strip { display: flex; align-items: center; gap: 12px; padding: 8px 12px; background: var(--linen); margin-bottom: 16px; flex-wrap: wrap; }
 .review-strip span:last-child { margin-left: auto; color: var(--muted); }
 .signoffs { list-style: none; padding: 0; margin: 0 0 12px; }

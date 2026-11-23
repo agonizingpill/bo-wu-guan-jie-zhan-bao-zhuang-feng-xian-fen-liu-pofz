@@ -1,5 +1,6 @@
 import hashlib
 import json
+import pickle
 from functools import lru_cache
 
 import numpy as np
@@ -66,11 +67,30 @@ def trained_model():
     return model, statistics
 
 
+@lru_cache(maxsize=1)
+def model_artifact():
+    """评分当时所用模型的序列化留档。同名模型换参数后，指纹随之变化，原版仍可按指纹取回。"""
+    model, statistics = trained_model()
+    blob = pickle.dumps(model)
+    return {'model_version': VERSION, 'artifact_sha256': hashlib.sha256(blob).hexdigest(),
+            'blob': blob, 'parameters': statistics}
+
+
 def score(snapshot):
     model, statistics = trained_model()
     values = np.asarray([[snapshot[column] for column in COLUMNS]], dtype=object)
     probability = float(model.predict_proba(values)[0, 1])
     transformed = model.named_steps['columntransformer'].transform(values)[0]
     evidence = {**statistics, 'input_sha256': sha(snapshot),
+                'model_sha256': model_artifact()['artifact_sha256'],
                 'encoded_features': dict(zip(COLUMNS, map(float, transformed), strict=True))}
     return probability, 'high' if probability >= THRESHOLD else 'low', evidence
+
+
+def rescore(blob, snapshot, evidence):
+    """复算只用留档的模型字节与当时的阈值，不触碰当前进程里的模型。"""
+    model = pickle.loads(blob)
+    values = np.asarray([[snapshot[column] for column in COLUMNS]], dtype=object)
+    probability = float(model.predict_proba(values)[0, 1])
+    threshold = float((evidence or {}).get('risk_threshold', THRESHOLD))
+    return probability, 'high' if probability >= threshold else 'low'

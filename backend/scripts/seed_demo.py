@@ -3,7 +3,7 @@ from datetime import datetime
 
 from psycopg.types.json import Jsonb
 
-from src.scoring import score
+from src.scoring import model_artifact, score
 from src.security import hash_password
 from src.storage import audit, connection, initialize
 
@@ -68,9 +68,15 @@ def seed():
             snapshot = dict(material=material, packing=packing, route_type=route, max_rh=rh, transfers=transfers)
             probability, risk, evidence = score(snapshot)
             assert risk == ('high' if is_sample else 'low'), (accession, probability)
-            case_id = db.execute('''INSERT INTO triage_case (loan_id,status,input_snapshot,probability,risk,evidence,attempts,requested_by,computed_at)
-                          VALUES (%s,'scored',%s,%s,%s,%s,1,'operator',now()) RETURNING id''',
-                                 (loan_id, Jsonb(snapshot), probability, risk, Jsonb(evidence))).fetchone()['id']
+            artifact = model_artifact()
+            db.execute('''INSERT INTO model_archive (model_version,artifact_sha256,artifact,parameters,recorded_by)
+                          VALUES (%s,%s,%s,%s,'worker') ON CONFLICT DO NOTHING''',
+                       (artifact['model_version'], artifact['artifact_sha256'],
+                        artifact['blob'], Jsonb(artifact['parameters'])))
+            case_id = db.execute('''INSERT INTO triage_case (loan_id,status,input_snapshot,probability,risk,evidence,model_sha256,attempts,requested_by,computed_at)
+                          VALUES (%s,'scored',%s,%s,%s,%s,%s,1,'operator',now()) RETURNING id''',
+                                 (loan_id, Jsonb(snapshot), probability, risk, Jsonb(evidence),
+                                  artifact['artifact_sha256'])).fetchone()['id']
             audit(db, loan_id, 'worker', 'triage_scored', case_id=case_id, risk=risk, probability=probability)
             if is_sample:
                 witness = '两侧内衬贴合，器口与肩部无新裂纹。'

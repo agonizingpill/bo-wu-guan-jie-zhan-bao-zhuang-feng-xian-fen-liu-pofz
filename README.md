@@ -69,6 +69,8 @@ docker compose exec -T backend python -m scripts.seed_demo
 - 输入为材质、包装结构、路线类别、最高相对湿度和转运次数。检查保存后，经办可提交分流，形成输入快照。结果入档后，只有封签可补录，通过抽检后的封签也会冻结。
 - 三个类别用平滑目标编码。类别样本数为 `n` 时，编码为 `(该类别正例数 + 12 × 训练正例率) / (n + 12)`。训练行按 5 折交叉拟合，湿度和转运经标准化后，与编码一起输入 L2 LogisticRegression（`C=1.0`）。
 - 用种子 `2611` 生成 960 条合成检查，分层留出 25%。模型概率达到 `0.58` 生成一张开箱复核单。留出集 ROC AUC、Brier 分数、版本、参数、样本和输入 SHA-256、编码值随结果写库。概率只代表当前演示模型的分流判断。
+- 新评分把当时所用模型序列化后一并写入 `model_archive`，与评分同事务提交；模型存不下来就不出分，案件记为失败可重试。同名模型之后更换参数，指纹随之变化，原版模型仍按指纹取回。
+- 理赔复算由主管在风险分流页发起。复算只读封存档案，用留档模型和原包装快照重算，对照封存概率、判定与开箱判定，差异写入 `triage_recheck`，原派车档案保持封存。老档没有留档模型时，复算结论为无法核对。复算中断后由 worker 续跑；每笔分流案件只留一条结论，重试不重复记录。
 - PostgreSQL 保留 `queued` 状态。Redis 通知丢失时，worker 会重新推送数据库中待算的任务。计算失败保留记录并允许同一 case 重试。
 - 派车同时要求封签存在、运输窗口已确认且借展已放行。同一展厅或同一车辆的有效窗口相互排斥。高风险由经办见证、主管签字，改判低风险须留理由并抽检封签。封签不符保留失败记录，仍需重新核验。
 
@@ -79,6 +81,7 @@ docker compose exec -T backend python -m scripts.seed_demo
 | 岗位 | `migrations/001_archive.sql`、`schemas.py`、`security.py`、`app.py`、`scripts/seed_demo.py` | `constants.js`、`app.js` 和四个 `pages/` 模块 |
 | 借展状态 | SQL 约束、`schemas.py`、`loans.py`、`transit.py`、`triage.py`、`reviews.py`、`worker.py`、seed | `constants.js`、`components.js`、`pages/archive.js`、`pages/transit.js` |
 | 开箱状态 | SQL 约束、`schemas.py`、`reviews.py`、`loans.py`、`worker.py`、seed | `constants.js`、`pages/review.js`、`pages/archive.js` |
+| 复算状态 | `migrations/002_recheck.sql`、`recheck.py`、`worker.py` | `constants.js`、`pages/triage.js` |
 | 材质、包装、路线 | SQL 约束、`schemas.py`、`scoring.py`、seed | `constants.js`、`pages/archive.js`、`pages/triage.js` |
 
 许可证见 [MIT License](LICENSE)。

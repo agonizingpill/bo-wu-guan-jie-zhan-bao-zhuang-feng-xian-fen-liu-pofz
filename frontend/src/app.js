@@ -65,7 +65,8 @@ async function render() {
     if (ticket !== generation) return;
     Object.assign(store, {loans, record, schedule});
     shell(page, renderers[page](store));
-    if (record?.triage?.status === 'queued' && page === 'triage') poll = setTimeout(render, 1600);
+    if ((record?.triage?.status === 'queued' || record?.recheck?.status === 'queued') && page === 'triage')
+      poll = setTimeout(render, 1600);
   } catch (err) {
     if (ticket !== generation) return;
     if (err.status === 401) { saveSession(null); loginPage(); tell(err.message, true); return; }
@@ -87,11 +88,13 @@ function target(action, fields) {
       {...fields, begins_at: fromLocal(fields.begins_at), ends_at: fromLocal(fields.ends_at)}];
   }
   if (action === 'triage') return [`${base}/triage`];
+  if (action === 'recheck') return [`${base}/recheck`];
   return [`${base}/review/${action}`, fields];
 }
 
 const confirmations = {intake: '已建立借展档案', crate: '已保存检查记录', setup: '已登记展厅布置',
-  triage: '已提交风险分流', witness: '已签署开箱见证', decision: '已记录主管决定', sample: '封签抽检通过', reopen: '已重开复核'};
+  triage: '已提交风险分流', recheck: '已提交理赔复算', witness: '已签署开箱见证', decision: '已记录主管决定',
+  sample: '封签抽检通过', reopen: '已重开复核'};
 
 app.addEventListener('submit', async (event) => {
   const form = event.target;

@@ -7,6 +7,7 @@ from psycopg.types.json import Jsonb
 from redis import Redis
 
 QUEUE = 'museum:triage'
+RECHECK_QUEUE = 'museum:recheck'
 
 
 def connection():

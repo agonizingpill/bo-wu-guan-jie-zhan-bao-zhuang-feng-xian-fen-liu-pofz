@@ -7,12 +7,13 @@ from .storage import audit
 
 ARCHIVE = '''
 SELECT l.*, to_jsonb(c) AS crate, to_jsonb(w) AS transit, to_jsonb(t) AS triage,
-       to_jsonb(r) AS review
+       to_jsonb(r) AS review, to_jsonb(k) AS recheck
 FROM exhibit_loan l
 LEFT JOIN crate_check c ON c.loan_id=l.id
 LEFT JOIN transit_window w ON w.loan_id=l.id AND w.status IN ('booked','conflict','dispatched')
 LEFT JOIN triage_case t ON t.loan_id=l.id
 LEFT JOIN unpack_review r ON r.case_id=t.id
+LEFT JOIN triage_recheck k ON k.case_id=t.id
 '''
 
 
